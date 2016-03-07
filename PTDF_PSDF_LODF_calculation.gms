@@ -1,7 +1,10 @@
-$title PTDF in GAMS
+$title PTDF, PSDF, LODF in GAMS
 $ontext
 + DESCRIPTION +
-Code with the general setting to calculate power-transfer-distribution-factors
+Code with the general setting to calculate relevant system matrices
+         - PTDF - power-transfer-distribution-factors
+         - PSDF - phase-shifting-distribution-factors
+         - LODF - line-outage-distribution-factors
 based on network topology and technical characteristics. The general procedure is
 applied to a simplified three-node network with identical characteristics.
 
@@ -26,12 +29,14 @@ PARAMETER
          l3.n3   -1/
 
          bvector(l)      bvector with susceptance values
-         /l1*l3  3/
+         /l1*l3  1/
 
          h(l,n)          line susceptance matrix
          b(nn,n)         node susceptance matrix
          bin(n,nn)       inverted node susceptance matrix
          ptdf(l,n)       power-transfer-distribution-matrix
+         psdf(l,ll)      phase-shifting-distribution-matrix
+         lodf(l,ll)      line-outage-distribution-matrix
 ;
 
 * calculation of network matrices
@@ -72,4 +77,16 @@ PTDF(l,nn) = SUM(n$H(l,n), H(l,n)*Bin(n,nn));
 
 display ptdf;
 
+* Calculate PSDF (phase-shifting distribution matrix, LxLL) meaning the change of p.u. loadflow
+* on a line LL through a phase-shifting by 1rad at line L
+PSDF(l,ll) = bvector(l)$(ord(l) eq ord(ll))-SUM(n, ptdf(l,n)*(h(ll,n)));
+
+display psdf;
+
+* Calculate LODF (line-outage distribution matrix, LxLL) meaning the change of p.u. loadflow
+* on a line L through an outage of line L
+LODF(l,ll) = SUM(n, Incidence(ll,n)*PTDF(l,n))/(1-SUM(n, Incidence(ll,n)*PTDF(ll,n)));
+LODF(l,l) = -1
+
+display lodf;
 
